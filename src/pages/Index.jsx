@@ -1,15 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Cat, Heart, Info, Paw, Camera, Sun, Moon, Sparkles, ArrowDown } from "lucide-react";
+import { Cat, Heart, Info, Paw, Camera, Sun, Moon, Sparkles, ArrowDown, Gift, Music } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [likeCount, setLikeCount] = useState(0);
@@ -18,14 +22,27 @@ const Index = () => {
   const [generatedName, setGeneratedName] = useState("");
   const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
+  const [catSounds, setCatSounds] = useState([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentSound, setCurrentSound] = useState(null);
+  const audioRef = useRef(null);
+  const { toast } = useToast();
 
-  const catImages = [
+  const catImages = useMemo(() => [
     "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/1200px-Cat_November_2010-1a.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/1200px-Kittyply_edit1.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Sleeping_cat_on_her_back.jpg/1200px-Sleeping_cat_on_her_back.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/False_orca_size.svg/1200px-False_orca_size.svg.png",
-  ];
+  ], []);
+
+  useEffect(() => {
+    setCatSounds([
+      { name: "Meow", url: "https://example.com/meow.mp3" },
+      { name: "Purr", url: "https://example.com/purr.mp3" },
+      { name: "Hiss", url: "https://example.com/hiss.mp3" },
+    ]);
+  }, []);
 
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 300], [0, 150]);
@@ -58,15 +75,36 @@ const Index = () => {
   }, []);
 
   const generateCatName = () => {
-    const prefixes = ["Mr.", "Mrs.", "Sir", "Lady", "Captain", "Professor"];
-    const names = ["Whiskers", "Mittens", "Socks", "Fluffy", "Luna", "Oreo", "Simba", "Nala", "Leo", "Milo"];
-    const suffixes = ["Jr.", "III", "the Great", "von Purrington", "Pawsome"];
+    const prefixes = ["Mr.", "Mrs.", "Sir", "Lady", "Captain", "Professor", "Duke", "Duchess", "Lord", "Queen"];
+    const names = ["Whiskers", "Mittens", "Socks", "Fluffy", "Luna", "Oreo", "Simba", "Nala", "Leo", "Milo", "Bella", "Oliver", "Lucy", "Charlie", "Kitty"];
+    const suffixes = ["Jr.", "III", "the Great", "von Purrington", "Pawsome", "of Catnip", "Fluffington", "Meowserables", "Clawsome", "Whiskertons"];
 
     const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
     const randomName = names[Math.floor(Math.random() * names.length)];
     const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
 
     setGeneratedName(`${randomPrefix} ${randomName} ${randomSuffix}`);
+  };
+
+  const playSound = (url) => {
+    if (audioRef.current) {
+      if (isPlaying && currentSound === url) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.src = url;
+        audioRef.current.play();
+        setIsPlaying(true);
+        setCurrentSound(url);
+      }
+    }
+  };
+
+  const handleSubscribe = () => {
+    toast({
+      title: "Subscribed!",
+      description: "You've successfully subscribed to our daily cat facts.",
+    });
   };
 
   return (
@@ -102,6 +140,35 @@ const Index = () => {
             </Button>
           </motion.div>
         </div>
+        <motion.div 
+          className="absolute top-0 left-0 w-full h-full"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 1 }}
+        >
+          {[...Array(20)].map((_, index) => (
+            <motion.div
+              key={index}
+              className="absolute"
+              initial={{
+                x: Math.random() * window.innerWidth,
+                y: -20,
+                opacity: 0,
+              }}
+              animate={{
+                y: window.innerHeight,
+                opacity: [0, 1, 0],
+              }}
+              transition={{
+                duration: Math.random() * 10 + 5,
+                repeat: Infinity,
+                delay: Math.random() * 5,
+              }}
+            >
+              <Paw className="text-white opacity-20" size={Math.random() * 20 + 10} />
+            </motion.div>
+          ))}
+        </motion.div>
         <motion.div 
           className="absolute inset-0 z-0"
           style={{
@@ -335,11 +402,98 @@ const Index = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+          transition={{ duration: 0.5, delay: 1 }}
+        >
+          <Card className="mb-16">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Music className="w-6 h-6" /> Cat Sounds
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                {catSounds.map((sound, index) => (
+                  <Button
+                    key={index}
+                    onClick={() => playSound(sound.url)}
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Music className="w-4 h-4" />
+                    {sound.name}
+                  </Button>
+                ))}
+              </div>
+              <audio ref={audioRef} />
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+          transition={{ duration: 0.5, delay: 1.2 }}
+        >
+          <Card className="mb-16">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Gift className="w-6 h-6" /> Cat Gift Ideas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-4">
+                {[
+                  "Interactive Laser Toy",
+                  "Cozy Cat Bed",
+                  "Scratching Post",
+                  "Catnip-filled Toys",
+                  "Automatic Feeder"
+                ].map((gift, index) => (
+                  <li key={index} className="flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-purple-500" />
+                    <span>{gift}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </motion.div>
       </main>
       <footer className="bg-purple-600 text-white py-8 mt-16">
         <div className="container mx-auto text-center">
           <p className="text-lg">© 2024 Feline Fascination. All rights reserved.</p>
           <p className="mt-2">Created with 😺 by cat lovers, for cat lovers.</p>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="link" className="text-white hover:text-purple-200 mt-4">
+                Subscribe to Cat Facts
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Subscribe to Daily Cat Facts</DialogTitle>
+                <DialogDescription>
+                  Get a daily dose of cat wisdom delivered to your inbox!
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    className="col-span-3"
+                    placeholder="your@email.com"
+                  />
+                </div>
+              </div>
+              <Button onClick={handleSubscribe} className="w-full">Subscribe</Button>
+            </DialogContent>
+          </Dialog>
         </div>
       </footer>
     </div>
